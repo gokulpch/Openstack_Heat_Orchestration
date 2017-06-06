@@ -1,0 +1,2 @@
+resource_registry:
+  "OS::Nova::Server::Ubuntu": "single_instance_scale.yaml"

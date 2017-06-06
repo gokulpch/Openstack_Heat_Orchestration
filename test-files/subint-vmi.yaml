@@ -1,0 +1,154 @@
+heat_template_version: 2014-10-16
+
+parameters:
+  private_net_name_1:
+    type: string
+  private_net_cidr_1:
+    type: string
+  private_net_gateway_1:
+    type: string
+  private_net_name_2:
+    type: string
+  private_net_cidr_2:
+    type: string
+  private_net_gateway_2:
+    type: string
+  private_net_name_2:
+    type: string
+  private_net_cidr_2:
+    type: string
+  private_net_gateway_2:
+    type: string
+  mac_address_1:
+    type: string
+  mac_address_2:
+    type: string
+  parentID_1:
+    type: string
+  parentID_2:
+    type: string
+  vlan_tag_1:
+    type: number
+  vlan_tag_2:
+    type: number
+  VMI_name_1:
+    type: string
+  VMI_name_2:
+    type: string
+  VMI_name_3:
+    type: string
+  VMI_name_4:
+    type: string
+
+resources:
+  private_net_1:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_net_name_1 }
+
+  private_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: private_net_1 }
+      cidr: { get_param: private_net_cidr_1 }
+      gateway_ip: { get_param: private_net_gateway_1 }
+  
+  template_VirtualMachineInterface_1:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: VMI_name_1 }
+      virtual_network_refs: [{ get_resource: private_net_1 }]
+      virtual_machine_interface_properties:
+        {
+          virtual_machine_interface_properties_sub_interface_vlan_tag: { get_param: vlan_tag_1 },
+        }    
+      virtual_machine_interface_mac_addresses:
+        {
+          virtual_machine_interface_mac_addresses_mac_address: [{ get_param: mac_address_1 }],
+        }
+      virtual_machine_interface_refs: [{ get_param: parentID_1 }]
+
+  template_VirtualMachineInterface_2:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: VMI_name_2 }
+      virtual_network_refs: [{ get_resource: private_net_1 }]
+      virtual_machine_interface_properties:
+        {
+          virtual_machine_interface_properties_sub_interface_vlan_tag: { get_param: vlan_tag_1 },
+        }    
+      virtual_machine_interface_mac_addresses:
+        {
+        virtual_machine_interface_mac_addresses_mac_address: [{ get_param: mac_address_2 }]
+        }
+      virtual_machine_interface_refs: [{ get_param: parentID_2 }]
+
+  instanceIP_1_1:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_VirtualMachineInterface_1 ]
+    properties:
+      virtual_network_refs: [{ get_resource: private_net_1 }]
+      virtual_machine_interface_refs: [{ get_resource: template_VirtualMachineInterface_1 }]
+
+  instanceIP_1_2:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_VirtualMachineInterface_2 ]
+    properties:
+      virtual_network_refs: [{ get_resource: private_net_1 }]
+      virtual_machine_interface_refs: [{ get_resource: template_VirtualMachineInterface_2 }]
+
+  private_net_2:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_net_name_2 }
+
+  private_subnet_2:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: private_net_2 }
+      cidr: { get_param: private_net_cidr_2 }
+      gateway_ip: { get_param: private_net_gateway_2 }
+
+  template_VirtualMachineInterface_3:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: VMI_name_3 }
+      virtual_network_refs: [{ get_resource: private_net_2 }]
+      virtual_machine_interface_properties:
+        {
+          virtual_machine_interface_properties_sub_interface_vlan_tag: { get_param: vlan_tag_2 },
+        }
+      virtual_machine_interface_mac_addresses:
+        {
+          virtual_machine_interface_mac_addresses_mac_address: [{ get_param: mac_address_1 }],
+        }
+      virtual_machine_interface_refs: [{ get_param: parentID_1 }]
+
+  template_VirtualMachineInterface_4:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: VMI_name_4 }
+      virtual_network_refs: [{ get_resource: private_net_2 }]
+      virtual_machine_interface_properties:
+        {
+          virtual_machine_interface_properties_sub_interface_vlan_tag: { get_param: vlan_tag_2 },
+        }
+      virtual_machine_interface_mac_addresses:
+        {
+        virtual_machine_interface_mac_addresses_mac_address: [{ get_param: mac_address_2 }]
+        }
+      virtual_machine_interface_refs: [{ get_param: parentID_2 }]
+
+  instanceIP_2_1:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_VirtualMachineInterface_3 ]
+    properties:
+      virtual_network_refs: [{ get_resource: private_net_2 }]
+      virtual_machine_interface_refs: [{ get_resource: template_VirtualMachineInterface_3 }]
+
+  instanceIP_2_2:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_VirtualMachineInterface_4 ]
+    properties:
+      virtual_network_refs: [{ get_resource: private_net_2 }]
+      virtual_machine_interface_refs: [{ get_resource: template_VirtualMachineInterface_4 }]

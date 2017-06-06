@@ -1,0 +1,12 @@
+heat_template_version: 2014-10-16
+
+description: Base Ubuntu 14.04.04 server autoscaling
+
+resources:
+  server:
+    type: OS::Nova::Server
+    properties:
+      image: ubuntu
+      flavor: m1.tiny
+      networks:
+        - network: left-network
