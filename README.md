@@ -1,4 +1,4 @@
-# HOT-OpenStack
+# HEAT-OpenStack
 Heat Orchestration Templates for Contrail/OpenContrail
 
 ![alt text](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/OpenStack%C2%AE_Logo_2016.svg/1280px-OpenStack%C2%AE_Logo_2016.svg.png)
