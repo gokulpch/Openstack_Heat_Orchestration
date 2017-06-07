@@ -1,0 +1,45 @@
+heat_template_version: 2015-04-30
+
+description: HOT to create IPAM & Virtual-Network
+
+parameters:
+  ipam_name:
+    type: string
+    description: Name of IPAM to be created
+
+  network_name:
+    type: string
+    description: Name of the Virtual Network to be created
+
+  network_prefix:
+    type: string
+    description: Virtual Network prefix
+
+  network_prefix_len:
+    type: number
+    description: Virtual Network prefix length
+
+resources:
+  template_NetworkIpam:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: { get_param: ipam_name }
+
+  template_VirtualNetwork:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ template_NetworkIpam ]
+    properties:
+      name: { get_param: network_name }
+      network_ipam_refs: [{ get_resource: template_NetworkIpam }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: { get_param: network_prefix },
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: { get_param: network_prefix_len },
+                },
+            }]
+         }]
+

@@ -1,0 +1,14 @@
+heat_template_version: 2015-04-30
+
+description: HOT to create IPAM
+
+parameters:
+  ipam_name:
+    type: string
+    description: Name of IPAM to be created
+
+resources:
+  template_NetworkIpam:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: { get_param: ipam_name }

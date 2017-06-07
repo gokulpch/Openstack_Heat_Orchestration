@@ -1,0 +1,229 @@
+heat_template_version: 2015-04-30
+
+description: HOT to create IPAM & Virtual-Network, create & attach a network policy, launch nova instances
+
+parameters:
+  ipam_name:
+    type: string
+    description: Name of IPAM to be created
+
+  left_network_name:
+    type: string
+    description: Name of the left Virtual Network to be created
+
+  left_network_fqdn:
+    type: string
+    description: FQDN of left Virtual Network
+
+  left_network_prefix:
+    type: string
+    description: Left Virtual Network prefix
+
+  left_network_prefix_len:
+    type: number
+    description: Left Virtual Network prefix length
+
+  right_network_name:
+    type: string
+    description: Name of the right Virtual Network to be created
+
+  right_network_fqdn:
+    type: string
+    description: FQDN of right Virtual Network
+
+  right_network_prefix:
+    type: string
+    description: Right Virtual Network prefix
+
+  right_network_prefix_len:
+    type: number
+    description: Right Virtual Network prefix length
+
+  policy_name:
+    type: string
+    description: Name of the network policy
+
+  policy_direction:
+    type: string
+    description: Network policy direction
+
+  protocol:
+    type: string
+    description: Protocol to pass/deny
+
+  simple_action:
+    type: string
+    description: Pass/Deny action
+
+  src_start_port:
+    type: number
+    description: Source VN start port
+
+  src_end_port:
+    type: number
+    description: Source VN end port
+
+  dst_start_port:
+    type: number
+    description: Destination VN start port
+
+  dst_end_port:
+    type: number
+    description: Destination VN end port
+
+  server_left_name:
+    type: string
+    description: Name of the Nova server to be launched in left VN
+
+  server_right_name:
+    type: string
+    description: Name of the Nova server to be launched in right VN
+
+  image_name:
+    type: string
+    description: Name of the image
+
+  flavor_type:
+    type: string
+    description: Server flavor type
+
+resources:
+  template_NetworkIpam:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: { get_param: ipam_name }
+
+  template_left_VirtualNetwork:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ template_NetworkIpam, template_NetworkPolicy ]
+    properties:
+      name: { get_param: left_network_name }
+      network_ipam_refs: [{ get_resource: template_NetworkIpam }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: { get_param: left_network_prefix },
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: { get_param: left_network_prefix_len },
+                },
+            }]
+         }]
+      network_policy_refs: [{ list_join: [':', { get_attr: [ template_NetworkPolicy, fq_name ] } ] }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  template_right_VirtualNetwork:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ template_NetworkIpam, template_NetworkPolicy ]
+    properties:
+      name: { get_param: right_network_name }
+      network_ipam_refs: [{ get_resource: template_NetworkIpam }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: { get_param: right_network_prefix },
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: { get_param: right_network_prefix_len },
+                },
+            }]
+         }]
+      network_policy_refs: [{ list_join: [':', { get_attr: [ template_NetworkPolicy, fq_name ] } ] }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  template_NetworkPolicy:
+    type: OS::ContrailV2::NetworkPolicy
+    properties:
+       name: { get_param: policy_name }
+       network_policy_entries:
+          network_policy_entries_policy_rule: [
+             {
+                network_policy_entries_policy_rule_direction: { get_param: policy_direction },
+                network_policy_entries_policy_rule_protocol: { get_param: protocol },
+       	        network_policy_entries_policy_rule_dst_addresses:
+                  [{
+                    network_policy_entries_policy_rule_dst_addresses_virtual_network: { get_param: right_network_fqdn },
+                  }],
+       	        network_policy_entries_policy_rule_src_addresses:
+                  [{
+                    network_policy_entries_policy_rule_src_addresses_virtual_network: { get_param: left_network_fqdn },
+                  }],
+                network_policy_entries_policy_rule_src_ports:
+                  [{
+                    network_policy_entries_policy_rule_src_ports_start_port: { get_param: src_start_port },
+                    network_policy_entries_policy_rule_src_ports_end_port: { get_param: src_end_port }
+                  }],
+                network_policy_entries_policy_rule_dst_ports:
+                  [{
+                    network_policy_entries_policy_rule_dst_ports_start_port: { get_param: dst_start_port },
+                    network_policy_entries_policy_rule_dst_ports_end_port: { get_param: dst_end_port }
+                  }],
+                network_policy_entries_policy_rule_action_list: {
+                  network_policy_entries_policy_rule_action_list_simple_action: { get_param: simple_action } 
+                }
+             }
+          ]
+
+  template_left_VirtualMachineInterface:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: left_network_name }
+      virtual_network_refs: [{ get_resource: template_left_VirtualNetwork }]
+
+  template_left_InstanceIp:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_left_VirtualMachineInterface ]
+    properties:
+      name: { get_param: left_network_name }
+      virtual_machine_interface_refs: [{ get_resource: template_left_VirtualMachineInterface }]
+      virtual_network_refs: [{ get_resource: template_left_VirtualNetwork }]
+
+  template_right_VirtualMachineInterface:
+    type: OS::ContrailV2::VirtualMachineInterface
+    properties:
+      name: { get_param: right_network_name }
+      virtual_network_refs: [{ get_resource: template_right_VirtualNetwork }]
+
+  template_right_InstanceIp:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ template_right_VirtualMachineInterface ]
+    properties:
+      name: { get_param: right_network_name }
+      virtual_machine_interface_refs: [{ get_resource: template_right_VirtualMachineInterface }]
+      virtual_network_refs: [{ get_resource: template_right_VirtualNetwork }]
+
+  template_left_instance:
+    type: OS::Nova::Server
+    depends_on: [ template_left_InstanceIp ]
+    properties:
+      name: { get_param: server_left_name }
+      image: { get_param:  image_name }
+      flavor: { get_param: flavor_type }
+      networks:
+        - port: { get_resource: template_left_VirtualMachineInterface }
+
+  template_right_instance:
+    type: OS::Nova::Server
+    depends_on: [ template_right_InstanceIp ]
+    properties:
+      name: { get_param: server_right_name }
+      image: { get_param:  image_name }
+      flavor: { get_param: flavor_type }
+      networks:
+        - port: { get_resource: template_right_VirtualMachineInterface }
